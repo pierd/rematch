@@ -15,12 +15,17 @@ pub fn rematch(
 enum Parsed {
     Enum {
         item: syn::ItemEnum,
-        attrs_per_variant: Vec<Vec<TokenStream>>,
+        attrs_per_variant: Vec<Vec<Attribute>>,
     },
     Struct {
-        re: TokenStream,
+        attr: Attribute,
         item: syn::ItemStruct,
     },
+}
+
+#[derive(Clone, Debug)]
+enum Attribute {
+    Regex(TokenStream),
 }
 
 fn generate_fields(caps_ident: &Ident, fields: &Fields) -> TokenStream {
@@ -101,18 +106,19 @@ fn generate_fields_matching(
 
 fn generate_enum_matching<'a>(
     variants: impl IntoIterator<Item = &'a syn::Variant>,
-    attrs_per_variant: &'a [Vec<TokenStream>],
+    attrs_per_variant: &'a [Vec<Attribute>],
 ) -> TokenStream {
     variants
         .into_iter()
         .zip(attrs_per_variant.iter())
         .flat_map(|(variant, attrs)| {
             attrs.iter().enumerate().map(|(idx, attr)| {
+                let Attribute::Regex(re) = attr;
                 let re_ident =
                     Ident::new(&format!("RE_{}_{}", variant.ident, idx), Span::call_site());
                 let variant_ident = &variant.ident;
                 let self_ident = quote! { Self::#variant_ident };
-                generate_fields_matching(attr, &re_ident, self_ident, &variant.fields)
+                generate_fields_matching(re, &re_ident, self_ident, &variant.fields)
             })
         })
         .collect()
@@ -131,7 +137,10 @@ impl ToTokens for Parsed {
                     generate_enum_matching(&item.variants, attrs_per_variant),
                 )
             }
-            Parsed::Struct { re, item } => {
+            Parsed::Struct {
+                attr: Attribute::Regex(re),
+                item,
+            } => {
                 item.to_tokens(tokens);
                 let re_ident = Ident::new("RE", Span::call_site());
                 (
@@ -164,7 +173,7 @@ fn parse(attr: TokenStream, item: TokenStream) -> Parsed {
                     if attr.path.get_ident().map(proc_macro2::Ident::to_string)
                         == Some("rematch".to_owned())
                     {
-                        attrs.push(attr.tokens.clone());
+                        attrs.push(parse_rematch_attrs(attr.tokens.clone()));
                         false
                     } else {
                         true
@@ -177,8 +186,26 @@ fn parse(attr: TokenStream, item: TokenStream) -> Parsed {
                 attrs_per_variant,
             }
         }
-        Ok(syn::Item::Struct(s)) => Parsed::Struct { re: attr, item: s },
+        Ok(syn::Item::Struct(s)) => Parsed::Struct {
+            attr: parse_rematch_attrs(attr),
+            item: s,
+        },
         Ok(item) => abort!(item, "item is not an enum and not a struct"),
-        _ => unreachable!(),
+        _ => panic!("rematch can't be used on this item"),    // FIXME: better error handling
+    }
+}
+
+fn parse_rematch_attrs(raw_attrs: TokenStream) -> Attribute {
+    match syn::parse2::<syn::Expr>(raw_attrs.clone()) {
+        Ok(syn::Expr::Paren(paren_expr)) => {
+            Attribute::Regex(paren_expr.expr.to_token_stream())
+        }
+        Ok(syn::Expr::Lit(lit_expr)) => {
+            Attribute::Regex(lit_expr.lit.to_token_stream())
+        }
+        Ok(expr) => {
+            abort!(expr, "Unknown attributes expression!");
+        }
+        _ => panic!("invalid attributes"),    // FIXME: better error handling
     }
 }
