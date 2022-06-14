@@ -6,7 +6,7 @@ description = "A procedural macro to generate simple FromStr implementation base
 repository = "https://github.com/pierd/rematch"
 keywords = ["parsing"]
 categories = ["parsing"]
-readme = "README.md"
+readme = "../README.md"
 license = "MIT"
 edition = "2021"
 
