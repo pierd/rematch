@@ -1,6 +1,6 @@
 [package]
 name = "rematch"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Jakub Jaroszewski <jakub.jaroszewski@gmail.com>"]
 description = "A procedural macro to generate simple FromStr implementation based on Regular Expression matching"
 repository = "https://github.com/pierd/rematch"

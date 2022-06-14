@@ -40,13 +40,14 @@ fn generate_fields(caps_ident: &Ident, fields: &Fields) -> TokenStream {
                         .ident
                         .as_ref()
                         .expect("named field should have a name");
+                    let ident_str = ident.to_string();
                     let ty = &field.ty;
                     quote! {
                         #ident: #caps_ident.get(1 + #idx)
-                        .ok_or_else(|| anyhow::anyhow!("Getting group failed"))?
+                        .ok_or_else(|| anyhow::anyhow!("Getting group {} failed", 1 + #idx))?
                         .as_str()
                         .parse::<#ty>()
-                        .map_err(|e| anyhow::anyhow!("Field parsing error: {}", e))?,
+                        .map_err(|e| anyhow::anyhow!("Field '{}' parsing error: {}", #ident_str, e))?,
                     }
                 })
                 .collect::<TokenStream>();
@@ -65,10 +66,10 @@ fn generate_fields(caps_ident: &Ident, fields: &Fields) -> TokenStream {
                     let ty = &field.ty;
                     quote! {
                         #caps_ident.get(1 + #idx)
-                        .ok_or_else(|| anyhow::anyhow!("Getting group failed"))?
+                        .ok_or_else(|| anyhow::anyhow!("Getting group {} failed", 1 + #idx))?
                         .as_str()
                         .parse::<#ty>()
-                        .map_err(|e| anyhow::anyhow!("Field parsing error: {}", e))?,
+                        .map_err(|e| anyhow::anyhow!("Field {} parsing error: {}", #idx, e))?,
                     }
                 })
                 .collect::<TokenStream>();
@@ -155,7 +156,7 @@ impl ToTokens for Parsed {
 
                 fn from_str(s: &str) -> Result<Self, Self::Err> {
                     #matching
-                    return Err(anyhow::anyhow!("Regex matching failed!"));
+                    return Err(anyhow::anyhow!("Regex matching failed for: {:?}", s));
                 }
             }
         }
