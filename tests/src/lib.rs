@@ -23,7 +23,10 @@ mod tests {
             "Regex matching failed for: \"foo\"".to_owned(),
         );
         assert_eq!(
-            "b 999999999999999999999999999".parse::<Test>().unwrap_err().to_string(),
+            "b 999999999999999999999999999"
+                .parse::<Test>()
+                .unwrap_err()
+                .to_string(),
             "Field 0 parsing error: number too large to fit in target type".to_owned(),
         );
     }
@@ -51,7 +54,10 @@ mod tests {
             "Regex matching failed for: \"foo\"".to_owned(),
         );
         assert_eq!(
-            "a number 999999999999999999999999999 with some string abc".parse::<Test>().unwrap_err().to_string(),
+            "a number 999999999999999999999999999 with some string abc"
+                .parse::<Test>()
+                .unwrap_err()
+                .to_string(),
             "Field 'a' parsing error: number too large to fit in target type".to_owned(),
         );
     }

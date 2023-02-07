@@ -192,21 +192,17 @@ fn parse(attr: TokenStream, item: TokenStream) -> Parsed {
             item: s,
         },
         Ok(item) => abort!(item, "item is not an enum and not a struct"),
-        _ => panic!("rematch can't be used on this item"),    // FIXME: better error handling
+        _ => panic!("rematch can't be used on this item"), // FIXME: better error handling
     }
 }
 
 fn parse_rematch_attrs(raw_attrs: TokenStream) -> Attribute {
-    match syn::parse2::<syn::Expr>(raw_attrs.clone()) {
-        Ok(syn::Expr::Paren(paren_expr)) => {
-            Attribute::Regex(paren_expr.expr.to_token_stream())
-        }
-        Ok(syn::Expr::Lit(lit_expr)) => {
-            Attribute::Regex(lit_expr.lit.to_token_stream())
-        }
+    match syn::parse2::<syn::Expr>(raw_attrs) {
+        Ok(syn::Expr::Paren(paren_expr)) => Attribute::Regex(paren_expr.expr.to_token_stream()),
+        Ok(syn::Expr::Lit(lit_expr)) => Attribute::Regex(lit_expr.lit.to_token_stream()),
         Ok(expr) => {
             abort!(expr, "Unknown attributes expression!");
         }
-        _ => panic!("invalid attributes"),    // FIXME: better error handling
+        _ => panic!("invalid attributes"), // FIXME: better error handling
     }
 }
